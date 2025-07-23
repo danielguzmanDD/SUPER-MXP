@@ -31,7 +31,7 @@ const populateDropdown = (data) => {
   emails.sort();
 
   const dropdown = document.getElementById("emailDropdown");
-  dropdown.innerHTML = '<option value="">-- All --</option>';
+  dropdown.innerHTML = '<option value="">All Team</option>';
 
   emails.forEach(email => {
     const option = document.createElement("option");

@@ -15,7 +15,32 @@ document.addEventListener("DOMContentLoaded", () => {
     renderKPIs(rawData); // Initial team-wide view
   };
 
-  const populateDropdown = (data) => {
+  
+const populateDropdown = (data) => {
+  const firstRow = data[0] || {};
+  const emailKey = Object.keys(firstRow).find(k =>
+    k.toLowerCase().includes("email") || k.toLowerCase().includes("correo")
+  );
+
+  if (!emailKey) {
+    console.error("No email-like column found in sheet data.");
+    return;
+  }
+
+  const emails = [...new Set(data.map(row => row[emailKey]).filter(Boolean))];
+  emails.sort();
+
+  const dropdown = document.getElementById("emailDropdown");
+  dropdown.innerHTML = '<option value="">-- All --</option>';
+
+  emails.forEach(email => {
+    const option = document.createElement("option");
+    option.value = email;
+    option.textContent = email;
+    dropdown.appendChild(option);
+  });
+}
+
     const emails = [...new Set(data.map(row => row.Email).filter(Boolean))];
     emails.sort();
     emails.forEach(email => {

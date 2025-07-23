@@ -1,49 +1,56 @@
+
+let rawData = [];
+let chart;
+
 document.addEventListener("DOMContentLoaded", () => {
   const kpiGrid = document.getElementById("kpiGrid");
-  const dateInput = document.getElementById("filterDate");
-  const emailInput = document.getElementById("filterEmail");
-  const periodSelect = document.getElementById("filterPeriod");
-
-  let rawData = [];
+  const startDate = document.getElementById("startDate");
+  const endDate = document.getElementById("endDate");
+  const emailDropdown = document.getElementById("emailDropdown");
 
   const fetchData = async () => {
     const response = await fetch("https://opensheet.elk.sh/1DeKJrF1_6vm749WTDmsjWS4BdvEMJsQYAQgpmWq0XQE/RD");
     rawData = await response.json();
-    filterAndRender();
+    populateDropdown(rawData);
+    renderKPIs(rawData); // Initial team-wide view
   };
 
-  const filterAndRender = () => {
-    const filterDate = dateInput.value;
-    const filterEmail = emailInput.value.toLowerCase();
-    const period = periodSelect.value;
-
-    let filtered = rawData.filter(row => {
-      const matchesEmail = !filterEmail || (row.Email && row.Email.toLowerCase().includes(filterEmail));
-      return matchesEmail;
+  const populateDropdown = (data) => {
+    const emails = [...new Set(data.map(row => row.Email).filter(Boolean))];
+    emails.sort();
+    emails.forEach(email => {
+      const option = document.createElement("option");
+      option.value = email;
+      option.textContent = email;
+      emailDropdown.appendChild(option);
     });
+  };
 
-    if (filterDate) {
-      const selectedDate = new Date(filterDate);
-      filtered = filtered.filter(row => {
-        const rowDate = new Date(row.Date);
-        if (period === "day") {
-          return rowDate.toDateString() === selectedDate.toDateString();
-        } else if (period === "week") {
-          const rowWeekStart = new Date(rowDate);
-          rowWeekStart.setDate(rowDate.getDate() - rowDate.getDay());
-          const selectedWeekStart = new Date(selectedDate);
-          selectedWeekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
-          return rowWeekStart.toDateString() === selectedWeekStart.toDateString();
-        } else if (period === "month") {
-          return (
-            rowDate.getMonth() === selectedDate.getMonth() &&
-            rowDate.getFullYear() === selectedDate.getFullYear()
-          );
-        }
-        return true;
-      });
+  const parseDate = (str) => new Date(str + "T00:00:00");
+
+  const filterData = () => {
+    let data = rawData;
+    const email = emailDropdown.value;
+    const from = startDate.value ? parseDate(startDate.value) : null;
+    const to = endDate.value ? parseDate(endDate.value) : null;
+
+    if (email) {
+      data = data.filter(row => row.Email === email);
     }
 
+    if (from) {
+      data = data.filter(row => parseDate(row.Date) >= from);
+    }
+
+    if (to) {
+      data = data.filter(row => parseDate(row.Date) <= to);
+    }
+
+    return data;
+  };
+
+  const renderKPIs = (data) => {
+    const kpiGrid = document.getElementById("kpiGrid");
     const aggregate = {
       WorkedCases: 0,
       TTR: 0,
@@ -54,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       count: 0
     };
 
-    filtered.forEach(row => {
+    data.forEach(row => {
       const parseNum = val => parseFloat(val.replace('%','').replace(',','.')) || 0;
       aggregate.WorkedCases += parseNum(row.Cases);
       aggregate.TTR += parseNum(row.TTR);
@@ -93,11 +100,88 @@ document.addEventListener("DOMContentLoaded", () => {
       card.appendChild(value);
       kpiGrid.appendChild(card);
     });
+
+    renderChart(kpis);
   };
 
-  dateInput.addEventListener("change", filterAndRender);
-  emailInput.addEventListener("input", filterAndRender);
-  periodSelect.addEventListener("change", filterAndRender);
+  const renderChart = (kpis) => {
+    const ctx = document.getElementById('kpiChart').getContext('2d');
+    const labels = kpis.map(k => k.title);
+    const values = kpis.map(k => parseFloat(k.value.replace(/[^0-9.]/g, '')) || 0);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'KPI Values',
+          data: values,
+          backgroundColor: '#ff3008',
+          borderColor: '#ff5333',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#fff'
+            }
+          },
+          x: {
+            ticks: {
+              color: '#fff'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#fff'
+            }
+          }
+        }
+      }
+    });
+  };
+
+  document.getElementById("downloadCSV").addEventListener("click", () => {
+    exportToCSV(filterData());
+  });
+
+  [startDate, endDate, emailDropdown].forEach(input => {
+    input.addEventListener("change", () => {
+      const filtered = filterData();
+      renderKPIs(filtered);
+    });
+  });
+
+  const exportToCSV = (data) => {
+    const csvRows = [];
+    const headers = Object.keys(data[0]);
+    csvRows.push(headers.join(','));
+
+    data.forEach(row => {
+      const values = headers.map(h => JSON.stringify(row[h] || ""));
+      csvRows.push(values.join(','));
+    });
+
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], {{ type: 'text/csv' }});
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'kpi_data.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   fetchData();
 });

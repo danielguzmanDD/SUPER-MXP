@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Team KPI Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Team KPI Dashboard</h1>
     <div class="filters">
-      <input type="date" id="filterDate" />
-      <input type="text" id="filterEmail" placeholder="Filter by email" />
-      <select id="filterPeriod">
-        <option value="day">Daily</option>
-        <option value="week">Weekly</option>
-        <option value="month">Monthly</option>
-      </select>
+      <label>From: <input type="date" id="startDate" /></label>
+      <label>To: <input type="date" id="endDate" /></label>
+      <label>User:
+        <select id="emailDropdown">
+          <option value="">-- All --</option>
+        </select>
+      </label>
+      <button id="downloadCSV">Download CSV</button>
     </div>
     <div class="kpi-grid" id="kpiGrid"></div>
+    <canvas id="kpiChart" height="100"></canvas>
   </div>
   <script src="script.js"></script>
 </body>

@@ -11,17 +11,18 @@ body {
 
 h1 {
   text-align: center;
-  color: #00bcd4;
+  color: #ff3008;
 }
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.filters input {
+.filters input, .filters select {
   padding: 0.5rem;
   border-radius: 4px;
   border: none;
@@ -36,7 +37,7 @@ h1 {
 
 .kpi-card {
   background-color: #1e1e1e;
-  border-left: 5px solid #00bcd4;
+  border-left: 5px solid #ff3008;
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -56,4 +57,8 @@ h1 {
   font-size: 2rem;
   margin-top: 0.5rem;
   color: #ffffff;
+}
+
+canvas {
+  margin-top: 3rem;
 }
